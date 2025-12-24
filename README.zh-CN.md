@@ -69,6 +69,36 @@ python mysql2pgsql.py --in-file input.sql --out-file output.sql
 - 移除列级 `COLLATE ...` 约束（MySQL collation 名称通常不能直接在 PostgreSQL 使用）
 - 将 `FULLTEXT KEY` 转换为 PostgreSQL 的 GIN 索引（使用 `to_tsvector('simple', ...)`；你可能需要按业务调整词典与表达式）
 
+## 已测试的 MySQL 语法（当前用例）
+
+下面这些 MySQL 语法/特性，已在当前 `test/` 目录下的回归 SQL 用例中覆盖：
+
+- 标识符：反引号（例如 `CREATE TABLE `t``）
+- DDL：带 MySQL 表选项的 `CREATE TABLE`（`ENGINE=...`、`DEFAULT CHARSET=...`、`COLLATE=...`）
+- DDL：`AUTO_INCREMENT`（重写为 PostgreSQL `GENERATED AS IDENTITY`）
+- DDL：整数类型的 `UNSIGNED`（会重写；必要时会扩大类型范围）
+- DDL：列级 `COLLATE ...`（会移除）
+- DDL：`ON UPDATE CURRENT_TIMESTAMP` 列约束（会移除，并输出 `-- TODO` 提示用 trigger 实现）
+- DDL：`CREATE TABLE` 内联的 `KEY` / `INDEX`（会提取为独立 `CREATE INDEX`）
+- DDL：`UNIQUE KEY name (col, ...)`（重写为 `CONSTRAINT name UNIQUE (col, ...)`）
+- DDL：`FULLTEXT KEY`（重写为 `CREATE INDEX ... USING GIN (to_tsvector(...))`）
+- DDL：`KEY ... USING HASH`（重写为 `CREATE INDEX ... USING hash`）
+- DDL：`ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY ... ON DELETE ...`
+- 视图：`CREATE OR REPLACE DEFINER=... VIEW ...`（会移除 DEFINER）
+- DML：`INSERT IGNORE`（重写为 `INSERT ... ON CONFLICT DO NOTHING`）
+- DML：`UPDATE ... JOIN ... SET ...`（重写为 `UPDATE ... SET ... FROM ... WHERE ...`）
+- DML：`DELETE ... LIMIT N`（重写为基于 `ctid` 的删除语句）
+- 表达式/函数：`IFNULL` -> `COALESCE`、`IF` -> `CASE WHEN`、`UNIX_TIMESTAMP()` -> `EXTRACT(EPOCH ...)`
+- 字符串：`CONCAT(...)` -> `||`、`GROUP_CONCAT(... SEPARATOR 'x')` -> `STRING_AGG(..., 'x')`
+- 时间：`DATE_ADD(NOW(), INTERVAL ...)` -> `NOW() + INTERVAL ...`、`DATE_FORMAT(ts, fmt)` -> `TO_CHAR(ts, fmt)`
+- 正则：`REGEXP` -> `~`
+- JSON：`JSON_EXTRACT(obj, '$.a.b')` 映射为 PostgreSQL 的 JSON 路径提取
+
+备注：
+
+- `ON DUPLICATE KEY UPDATE` 会以注释 `-- TODO` 形式输出（需要依赖表上的唯一约束/冲突目标，无法在无 schema 的情况下可靠推导）。
+- `REPLACE INTO` 会以注释 `-- TODO` 形式输出（需要人工改写）。
+
 ## 常见问题
 
 ### Q: 一个文件里有多条 SQL 能处理吗？

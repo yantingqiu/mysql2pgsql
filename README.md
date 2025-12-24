@@ -67,6 +67,36 @@ To maximize the chance that generated DDL is **executable on PostgreSQL**, the t
 - Drop column-level `COLLATE ...` constraints (MySQL collation names usually don't exist in PostgreSQL)
 - Convert `FULLTEXT KEY` into a PostgreSQL GIN index using `to_tsvector('simple', ...)` (you may want to customize the dictionary and expression)
 
+## Tested MySQL syntax (current fixtures)
+
+The following MySQL constructs are covered by the current regression fixtures under `test/`:
+
+- Identifiers: backticks (e.g. `CREATE TABLE `t``)
+- DDL: `CREATE TABLE` with MySQL table options (`ENGINE=...`, `DEFAULT CHARSET=...`, `COLLATE=...`)
+- DDL: `AUTO_INCREMENT` (rewritten to PostgreSQL `GENERATED AS IDENTITY`)
+- DDL: integer `UNSIGNED` (rewritten; may widen type)
+- DDL: column `COLLATE ...` (stripped)
+- DDL: `ON UPDATE CURRENT_TIMESTAMP` column constraint (stripped + emits a `-- TODO` trigger hint)
+- DDL: inline `KEY` / `INDEX` extracted to standalone `CREATE INDEX`
+- DDL: `UNIQUE KEY name (col, ...)` rewritten to `CONSTRAINT name UNIQUE (col, ...)`
+- DDL: `FULLTEXT KEY` rewritten to `CREATE INDEX ... USING GIN (to_tsvector(...))`
+- DDL: `KEY ... USING HASH` rewritten to `CREATE INDEX ... USING hash`
+- DDL: `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY ... ON DELETE ...`
+- Views: `CREATE OR REPLACE DEFINER=... VIEW ...` (DEFINER stripped)
+- DML: `INSERT IGNORE` rewritten to `INSERT ... ON CONFLICT DO NOTHING`
+- DML: `UPDATE ... JOIN ... SET ...` rewritten to `UPDATE ... SET ... FROM ... WHERE ...`
+- DML: `DELETE ... LIMIT N` rewritten to a ctid-based delete
+- Functions/expressions: `IFNULL` -> `COALESCE`, `IF` -> `CASE WHEN`, `UNIX_TIMESTAMP()` -> `EXTRACT(EPOCH ...)`
+- Strings: `CONCAT(...)` -> `||`, `GROUP_CONCAT(... SEPARATOR 'x')` -> `STRING_AGG(..., 'x')`
+- Date/time: `DATE_ADD(NOW(), INTERVAL ...)` -> `NOW() + INTERVAL ...`, `DATE_FORMAT(ts, fmt)` -> `TO_CHAR(ts, fmt)`
+- Regex: `REGEXP` -> `~`
+- JSON: `JSON_EXTRACT(obj, '$.a.b')` mapped to PostgreSQL JSON path extraction
+
+Notes:
+
+- `ON DUPLICATE KEY UPDATE` is emitted as a commented `-- TODO` block (conflict target is schema-dependent).
+- `REPLACE INTO` is emitted as a commented `-- TODO` block (manual rewrite required).
+
 ## FAQ
 
 ### Q: Does it support multiple SQL statements in one file?
