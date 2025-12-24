@@ -78,3 +78,7 @@ Yes. The tool parses multiple statements (usually separated by `;`) and transpil
 sqlglot can parse many index-related constructs (e.g. `CREATE INDEX`, `ALTER TABLE ... ADD INDEX/KEY`, and `KEY/UNIQUE KEY/FULLTEXT KEY` inside `CREATE TABLE`).
 
 However, generating fully executable PostgreSQL DDL is not guaranteed for every MySQL feature (e.g. storage engine options, charsets, FULLTEXT semantics). Additional rewrite rules and/or manual review may still be required.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

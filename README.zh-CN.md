@@ -80,3 +80,7 @@ python mysql2pgsql.py --in-file input.sql --out-file output.sql
 sqlglot 可以解析很多索引相关语法（如 `CREATE INDEX`、`ALTER TABLE ... ADD INDEX/KEY`、以及 `CREATE TABLE` 内的 `KEY/UNIQUE KEY/FULLTEXT KEY`）。
 
 但“直接生成可在 PostgreSQL 执行的完整 DDL”并不保证 100% 成功：例如 `ENGINE=InnoDB`、`DEFAULT CHARSET`、`FULLTEXT` 的实现方式在两边差异很大，通常需要额外的规则处理或人工校对。
+
+## 许可证
+
+本项目使用 MIT 许可证发布，详见 [LICENSE](LICENSE)。
