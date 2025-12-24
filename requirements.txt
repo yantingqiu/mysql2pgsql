@@ -1,0 +1,6 @@
+# Core dependency
+sqlglot
+
+# Optional (faster tokenizer via Rust extension). If you want the speedup,
+# replace the line above with the line below:
+# sqlglot[rs]

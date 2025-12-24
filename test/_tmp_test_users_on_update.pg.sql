@@ -1,0 +1,2 @@
+CREATE TABLE users (id BIGINT NOT NULL GENERATED AS IDENTITY, updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (id));
+-- TODO: column updated_at used MySQL 'ON UPDATE CURRENT_TIMESTAMP'; implement via trigger in PostgreSQL
